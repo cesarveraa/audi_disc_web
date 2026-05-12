@@ -9,9 +9,19 @@ export interface ProductPublic {
   cantidad: number;
   stockMinimo: number;
   precioVentaCentavos: number;
+  imagenUrl: string | null;
   estado: boolean;
   createdAt: string | null;
   updatedAt: string | null;
+}
+
+export interface CatalogProduct {
+  id: string;
+  nombre: string;
+  marca: string | null;
+  categoria: string | null;
+  precioVentaCentavos: number;
+  imagenUrl: string | null;
 }
 
 export interface ProductAdmin extends ProductPublic {
