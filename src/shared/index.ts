@@ -24,6 +24,12 @@ export interface CatalogProduct {
   imagenUrl: string | null;
 }
 
+export interface CatalogProductsPage {
+  items: CatalogProduct[];
+  total_count: number;
+  has_more: boolean;
+}
+
 export interface ProductAdmin extends ProductPublic {
   precioCompraCentavos: number;
   utilidadCentavos: number;
@@ -46,6 +52,27 @@ export interface ProductCreateInput {
 export type ProductUpdateInput = Partial<ProductCreateInput> & {
   estado?: boolean;
 };
+
+export function slugifyCatalogText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+}
+
+export function createCatalogProductSlug(
+  product: Pick<CatalogProduct, 'nombre' | 'marca'>,
+  city = 'Sucre',
+): string {
+  const name = slugifyCatalogText(product.nombre);
+  const brand = product.marca ? slugifyCatalogText(product.marca) : '';
+  const citySlug = slugifyCatalogText(city);
+  const nameHasBrand = Boolean(brand && name.includes(brand));
+  return [name, nameHasBrand ? '' : brand, citySlug].filter(Boolean).join('-');
+}
 
 export function hasAdminFinancials(product: Product): product is ProductAdmin {
   return 'precioCompraCentavos' in product;
@@ -173,6 +200,108 @@ export interface SalesHistory {
   utilidadCentavos?: number;
   margenPorcentaje?: number;
   ventas: Sale[];
+}
+
+export type AuditAction = 'UPDATE' | 'DELETE' | 'PRICE_CHANGE' | 'STOCK_ADJUST';
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  userEmail?: string | null;
+  action: AuditAction;
+  entity: string;
+  entityId?: string | null;
+  previous_data: Record<string, unknown>;
+  new_data: Record<string, unknown>;
+  timestamp: string | null;
+}
+
+export interface AuditLogsPage {
+  items: AuditLog[];
+  total_count: number;
+  has_more: boolean;
+}
+
+export interface ParetoProductMetric {
+  productoId: string;
+  nombre: string;
+  marca?: string | null;
+  categoria?: string | null;
+  cantidadVendida: number;
+  totalCentavos: number;
+  utilidadCentavos: number;
+  revenueSharePorcentaje: number;
+  cumulativeSharePorcentaje: number;
+  isTopTwenty: boolean;
+  paretoClass: 'A' | 'B' | 'C';
+}
+
+export interface MonthlySalesTrend {
+  mes: string;
+  label: string;
+  totalCentavos: number;
+  utilidadCentavos: number;
+  cantidadVentas: number;
+  audifonosCantidad: number;
+  audifonosCentavos: number;
+}
+
+export interface HeadphoneSeasonality {
+  mes: string;
+  label: string;
+  cantidad: number;
+  totalCentavos: number;
+}
+
+export interface ReorderAlert {
+  productoId: string;
+  nombre: string;
+  marca?: string | null;
+  categoria?: string | null;
+  stockActual: number;
+  demandaMediaDiaria: number;
+  tiempoEntregaDias: number;
+  stockSeguridad: number;
+  reorderPoint: number;
+  sugerenciaCompra: number;
+}
+
+export interface DeadStockItem {
+  productoId: string;
+  nombre: string;
+  marca?: string | null;
+  categoria?: string | null;
+  stockActual: number;
+  ultimaVentaFecha: string | null;
+  diasSinVenta: number | null;
+  valorInventarioCentavos: number;
+}
+
+export interface AnalyticsDashboard {
+  generatedAt: string;
+  pareto: {
+    totalProductos: number;
+    topTwentyCount: number;
+    topTwentyRevenueSharePorcentaje: number;
+    items: ParetoProductMetric[];
+  };
+  tendencias: {
+    ventasPorMes: MonthlySalesTrend[];
+    mesesFuertesAudifonos: HeadphoneSeasonality[];
+  };
+  margenes: {
+    ingresosCentavos: number;
+    costoCentavos: number;
+    utilidadNetaCentavos: number;
+    margenPorcentaje: number;
+    ventasAnalizadas: number;
+  };
+  inventario: {
+    leadTimeDias: number;
+    lookbackDiasDemanda: number;
+    reorderAlerts: ReorderAlert[];
+    deadStock: DeadStockItem[];
+  };
 }
 
 export interface Customer {
